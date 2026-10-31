@@ -5,22 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Live Location Map</title>
 
-  <!-- Подключаем стили и JS Leaflet -->
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
   <style>
-    body, html { margin: 0; padding: 0; height: 100%; }
+    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
     #map { width: 100%; height: 100%; }
+
+    /* Подпись поверх карты (опционально) */
+    .status-box {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 1000;
+    }
+    .status-box strong { color: #005500; }
   </style>
 </head>
 <body>
   <div id="map"></div>
+  <div class="status-box" id="status">Ожидание позиции…</div>
 
+  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // Инициализация карты (центр и зум — можно поменять)
-    const map = L.map('map').setView([55.751244, 37.618423], 13); // Москва по умолчанию
+    // Инициализация карты: центр — Москва, зум 13 (можно поменять под свой город)
+    const map = L.map('map').setView([55.751244, 37.618423], 13);
 
-    // Добавляем тайлы OpenStreetMap
+    // Тайлы OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
       maxZoom: 19
@@ -32,45 +50,50 @@
     function updatePosition(position) {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
-      const accuracy = position.coords.accuracy;
+      const accuracy = position.coords.accuracy; // радиус точности в метрах
 
-      // Если маркер ещё не создан — создаём
+      document.getElementById('status').textContent =
+        `Позиция: ${lat.toFixed(5)}, ${lng.toFixed(5)} | Точность: ${Math.round(accuracy)} м`;
+
       if (!marker) {
-        marker = L.marker([lat, lng]).addTo(map);
+        // Создаём маркер и круг точности
+        marker = L.marker([lat, lng]).addTo(map)
+          .bindPopup('Ты здесь').openPopup();
         circle = L.circle([lat, lng], {
           radius: accuracy,
-          color: '#ff0000',
-          fillOpacity: 0.2
+          color: '#ff4d4d',
+          fillColor: '#ff4d4d',
+          fillOpacity: 0.25
         }).addTo(map);
       } else {
-        // Двигаем маркер и круг
+        // Двигаем существующие объекты
         marker.setLatLng([lat, lng]);
         circle.setLatLng([lat, lng]);
         circle.setRadius(accuracy);
       }
 
-      // Центрируем карту на позиции (опционально — можно убрать, если не хочется, чтобы камера «прыгала»)
-      map.panTo([lat, lng]);
+      // ВАЖНО: не центрируем карту каждый раз — иначе будет «дёргаться» в стриме.
+      // Если хочешь, чтобы камера следила — раскомментируй строку ниже:
+      // map.panTo([lat, lng]);
     }
 
     function handleError(error) {
       console.error('Ошибка геолокации:', error);
-      // Тут можно вывести сообщение на экран, если нужно
+      document.getElementById('status').textContent = 'Ошибка геолокации или отказ в доступе';
     }
 
-    // Запрос геолокации
     if ("geolocation" in navigator) {
       navigator.geolocation.watchPosition(
         updatePosition,
         handleError,
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 15000,
           maximumAge: 0
         }
       );
     } else {
-      alert('Геолокация не поддерживается в этом браузере');
+      document.getElementById('status').textContent = 'Геолокация не поддерживается';
     }
   </script>
 </body>
