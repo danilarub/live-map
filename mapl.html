@@ -4,15 +4,26 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Live Location Map</title>
-
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
   <style>
     body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
     #map { width: 100%; height: 100%; }
-
-    /* Подпись поверх карты (опционально) */
+    .controls {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+    }
+    button {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    button:active { background: #f0f0f0; }
     .status-box {
       position: absolute;
       bottom: 20px;
@@ -21,24 +32,26 @@
       padding: 8px 12px;
       border-radius: 6px;
       font-family: Arial, sans-serif;
-      font-size: 14px;
+      font-size: 13px;
+      color: #333;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
       z-index: 1000;
     }
-    .status-box strong { color: #005500; }
   </style>
 </head>
 <body>
   <div id="map"></div>
+
+  <div class="controls">
+    <button id="btn-loc">📍 Найти меня</button>
+  </div>
+
   <div class="status-box" id="status">Ожидание позиции…</div>
 
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // Инициализация карты: центр — Москва, зум 13 (можно поменять под свой город)
     const map = L.map('map').setView([55.751244, 37.618423], 13);
 
-    // Тайлы OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
       maxZoom: 19
@@ -50,13 +63,12 @@
     function updatePosition(position) {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
-      const accuracy = position.coords.accuracy; // радиус точности в метрах
+      const accuracy = position.coords.accuracy;
 
       document.getElementById('status').textContent =
         `Позиция: ${lat.toFixed(5)}, ${lng.toFixed(5)} | Точность: ${Math.round(accuracy)} м`;
 
       if (!marker) {
-        // Создаём маркер и круг точности
         marker = L.marker([lat, lng]).addTo(map)
           .bindPopup('Ты здесь').openPopup();
         circle = L.circle([lat, lng], {
@@ -66,35 +78,30 @@
           fillOpacity: 0.25
         }).addTo(map);
       } else {
-        // Двигаем существующие объекты
         marker.setLatLng([lat, lng]);
         circle.setLatLng([lat, lng]);
         circle.setRadius(accuracy);
       }
 
-      // ВАЖНО: не центрируем карту каждый раз — иначе будет «дёргаться» в стриме.
-      // Если хочешь, чтобы камера следила — раскомментируй строку ниже:
-      // map.panTo([lat, lng]);
+      // Не двигаем камеру каждый раз
     }
 
     function handleError(error) {
       console.error('Ошибка геолокации:', error);
-      document.getElementById('status').textContent = 'Ошибка геолокации или отказ в доступе';
+      document.getElementById('status').textContent = 'Ошибка геолокации';
     }
 
-    if ("geolocation" in navigator) {
-      navigator.geolocation.watchPosition(
-        updatePosition,
-        handleError,
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0
-        }
-      );
-    } else {
-      document.getElementById('status').textContent = 'Геолокация не поддерживается';
-    }
+    document.getElementById('btn-loc').addEventListener('click', () => {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          updatePosition,
+          handleError,
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+      } else {
+        document.getElementById('status').textContent = 'Геолокация не поддерживается';
+      }
+    });
   </script>
 </body>
 </html>
