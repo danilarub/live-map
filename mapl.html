@@ -1,3 +1,7 @@
+
+Вот обновлённый код: кнопку «Найти меня» переместила в правый верхний угол, а всплывающую надпись «Ты здесь» убрала.
+
+html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -8,12 +12,14 @@
   <style>
     body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
     #map { width: 100%; height: 100%; }
+
     .controls {
       position: absolute;
       top: 20px;
-      left: 20px;
+      right: 20px;       /* Кнопка теперь справа */
       z-index: 1000;
     }
+
     button {
       background: #fff;
       border: 1px solid #ccc;
@@ -24,6 +30,7 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     button:active { background: #f0f0f0; }
+
     .status-box {
       position: absolute;
       bottom: 20px;
@@ -42,8 +49,9 @@
 <body>
   <div id="map"></div>
 
+  <!-- Кнопка теперь справа -->
   <div class="controls">
-    <button id="btn-loc">📍 Найти меня</button>
+    <button id="btn-loc">Find</button>
   </div>
 
   <div class="status-box" id="status">Ожидание позиции…</div>
@@ -69,8 +77,8 @@
         `Позиция: ${lat.toFixed(5)}, ${lng.toFixed(5)} | Точность: ${Math.round(accuracy)} м`;
 
       if (!marker) {
-        marker = L.marker([lat, lng]).addTo(map)
-          .bindPopup('Ты здесь').openPopup();
+        // Убрали bindPopup('Ты здесь') и openPopup()
+        marker = L.marker([lat, lng]).addTo(map);
         circle = L.circle([lat, lng], {
           radius: accuracy,
           color: '#ff4d4d',
@@ -82,8 +90,6 @@
         circle.setLatLng([lat, lng]);
         circle.setRadius(accuracy);
       }
-
-      // Не двигаем камеру каждый раз
     }
 
     function handleError(error) {
