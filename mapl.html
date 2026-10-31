@@ -63,13 +63,45 @@
     <button id="btn-loc">Point</button>
   </div>
 
-  <!-- Кнопки справа вверху: + и − -->
-  <div class="controls-right">
-    <button id="btn-zoom-in">+</button>
-    <button id="btn-zoom-out">−</button>
-  </div>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Location Map</title>
 
-  <div class="status-box" id="status">Ожидание позиции…</div>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+    #map { width: 100%; height: 100%; }
+
+    .controls {
+      position: absolute;
+      top: 60px;       /* под кнопками зума Leaflet */
+      left: 20px;
+      z-index: 1000;
+    }
+
+    button#btn-loc {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      font-family: Arial, sans-serif;
+    }
+    button#btn-loc:active { background: #f0f0f0; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <div class="controls">
+    <button id="btn-loc">Point</button>
+  </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
@@ -88,12 +120,8 @@
       const lng = position.coords.longitude;
       const accuracy = position.coords.accuracy;
 
-      document.getElementById('status').textContent =
-        `Позиция: ${lat.toFixed(5)}, ${lng.toFixed(5)} | Точность: ${Math.round(accuracy)} м`;
-
       if (!marker) {
-        // Без попапа «Ты здесь»
-        marker = L.marker([lat, lng]).addTo(map);
+        marker = L.marker([lat, lng]).addTo(map); // без bindPopup
         circle = L.circle([lat, lng], {
           radius: accuracy,
           color: '#ff4d4d',
@@ -109,10 +137,8 @@
 
     function handleError(error) {
       console.error('Ошибка геолокации:', error);
-      document.getElementById('status').textContent = 'Ошибка геолокации';
     }
 
-    // Обработчик кнопки «Найти меня»
     document.getElementById('btn-loc').addEventListener('click', () => {
       if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
@@ -120,17 +146,7 @@
           handleError,
           { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
-      } else {
-        document.getElementById('status').textContent = 'Геолокация не поддерживается';
       }
-    });
-
-    // Кнопки масштаба
-    document.getElementById('btn-zoom-in').addEventListener('click', () => {
-      map.zoomIn();
-    });
-    document.getElementById('btn-zoom-out').addEventListener('click', () => {
-      map.zoomOut();
     });
   </script>
 </body>
