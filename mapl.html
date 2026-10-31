@@ -4,71 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Live Location Map</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-    #map { width: 100%; height: 100%; }
-
-    /* Блок кнопок слева вверху */
-    .controls-left {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      z-index: 1000;
-    }
-
-    /* Блок кнопок справа вверху */
-    .controls-right {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      z-index: 1000;
-      display: flex;
-      gap: 8px;
-    }
-
-    button {
-      background: #fff;
-      border: 1px solid #ccc;
-      padding: 10px 16px;
-      font-size: 14px;
-      cursor: pointer;
-      border-radius: 6px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      width: 44px;
-      text-align: center;
-    }
-    button:active { background: #f0f0f0; }
-
-    .status-box {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      background: rgba(255, 255, 255, 0.85);
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-family: Arial, sans-serif;
-      font-size: 13px;
-      color: #333;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      z-index: 1000;
-    }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-
-  <!-- Кнопки слева вверху -->
-  <div class="controls-left">
-    <button id="btn-loc">Point</button>
-  </div>
-
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Live Location Map</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -78,7 +13,7 @@
 
     .controls {
       position: absolute;
-      top: 60px;       /* под кнопками зума Leaflet */
+      top: 72px;
       left: 20px;
       z-index: 1000;
     }
@@ -86,12 +21,13 @@
     button#btn-loc {
       background: #fff;
       border: 1px solid #ccc;
-      padding: 10px 16px;
+      padding: 12px 16px;
       font-size: 14px;
       cursor: pointer;
       border-radius: 6px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
       font-family: Arial, sans-serif;
+      color: #333;
     }
     button#btn-loc:active { background: #f0f0f0; }
   </style>
@@ -113,38 +49,43 @@
     }).addTo(map);
 
     let marker = null;
-    let circle = null;
+    let watchId = null; // ID отслеживания позиции
+    let isTracking = false;
 
     function updatePosition(position) {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
-      const accuracy = position.coords.accuracy;
 
       if (!marker) {
-        marker = L.marker([lat, lng]).addTo(map); // без bindPopup
-        circle = L.circle([lat, lng], {
-          radius: accuracy,
-          color: '#ff4d4d',
-          fillColor: '#ff4d4d',
-          fillOpacity: 0.25
-        }).addTo(map);
+        marker = L.marker([lat, lng]).addTo(map);
       } else {
         marker.setLatLng([lat, lng]);
-        circle.setLatLng([lat, lng]);
-        circle.setRadius(accuracy);
+      }
+
+      // Центрируем карту только если трекинг только что стартовал (чтобы не дёргать камеру при каждом шаге)
+      if (!isTracking) {
+        map.flyTo([lat, lng], 18, { animate: true, duration: 1.5 });
+        isTracking = true;
       }
     }
 
     function handleError(error) {
       console.error('Ошибка геолокации:', error);
+      // Можно добавить текст ошибки в UI, если нужно
     }
 
     document.getElementById('btn-loc').addEventListener('click', () => {
+      if (isTracking) return; // Не запускаем второй раз
+
       if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
+        watchId = navigator.geolocation.watchPosition(
           updatePosition,
           handleError,
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+          }
         );
       }
     });
